@@ -39,17 +39,14 @@ import java.security.PermissionCollection;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedExceptionAction;
 import java.security.SecureClassLoader;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.Set;
-import java.util.WeakHashMap;
+import java.util.*;
 import java.util.jar.Attributes;
 import java.util.jar.Attributes.Name;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+import java.util.stream.Stream;
 
+import jdk.internal.loader.ClassLoaders;
 import jdk.internal.loader.Resource;
 import jdk.internal.loader.URLClassPath;
 import jdk.internal.access.SharedSecrets;
@@ -111,9 +108,10 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
      */
     @SuppressWarnings("removal")
     public URLClassLoader(URL[] urls, ClassLoader parent) {
-        super(parent);
+        super(parent == null ? ClassLoaders.appClassLoader() : parent);
         this.acc = AccessController.getContext();
         this.ucp = new URLClassPath(urls, acc);
+        System.out.println("URLClassLoader: " +  Arrays.toString(urls) + " " + parent + " " + acc);
     }
 
     URLClassLoader(String name, URL[] urls, ClassLoader parent,
@@ -387,6 +385,7 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
      * @param url the URL to be added to the search path of URLs
      */
     protected void addURL(URL url) {
+        System.out.println("URLClassLoader.addURL: " + url);
         ucp.addURL(url);
     }
 
@@ -415,6 +414,7 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
     protected Class<?> findClass(final String name)
         throws ClassNotFoundException
     {
+        System.out.println("URLClassLoader.findClass: " + name);
         final Class<?> result;
         try {
             result = AccessController.doPrivileged(
@@ -422,6 +422,7 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
                     public Class<?> run() throws ClassNotFoundException {
                         String path = name.replace('.', '/').concat(".class");
                         Resource res = ucp.getResource(path, false);
+                        System.out.println("URLClassLoader.findClass: " + name + " " + res);
                         if (res != null) {
                             try {
                                 return defineClass(name, res);
@@ -838,6 +839,218 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
 
     static {
         ClassLoader.registerAsParallelCapable();
+    }
+
+
+    /**
+     * A custom classloader to restore Java 8 behavior
+     */
+    public static class BackportClassLoader extends URLClassLoader {
+
+        static {
+            ClassLoader.registerAsParallelCapable();
+        }
+
+        /**
+         * Convenience constructor
+         * @param parent The parent classLoader, ideally an AppClassLoader
+         */
+        public BackportClassLoader(ClassLoader parent) {
+            super(new URL[0], parent);
+        }
+
+        @Override
+        public String getName() {
+            //System.out.println("getName");
+            return super.getName();
+        }
+
+        @Override
+        public Class<?> loadClass(String name) throws ClassNotFoundException {
+            //System.out.println("loadclass: " + name);
+            Class<?> result = super.loadClass(name);
+            //System.out.println("loadclass return: " + result);
+            return result;
+        }
+
+        @Override
+        protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+            //System.out.println("loadclass: " + name + " " + resolve);
+            Class<?> result = super.loadClass(name, resolve);
+            //System.out.println("loadclass return: " + result);
+            return result;
+        }
+
+        @Override
+        protected Object getClassLoadingLock(String className) {
+            //System.out.println("getClassLoadingLock: " + className);
+            Object result = super.getClassLoadingLock(className);
+            //System.out.println("getClassLoadingLock return: " + result);
+            return result;
+        }
+
+        @Override
+        protected Class<?> findClass(String moduleName, String name) {
+            System.out.println("findClass: " + moduleName + " " + name);
+            Class<?> result = super.findClass(moduleName, name);
+            System.out.println("findClass return: " + result);
+            return result;
+        }
+
+        @Override
+        protected URL findResource(String moduleName, String name) throws IOException {
+            //System.out.println("findResource: " + moduleName + " " + name);
+            URL result = super.findResource(moduleName, name);
+            //System.out.println("findResource return: " + result);
+            return result;
+        }
+
+        @Override
+        public URL getResource(String name) {
+            //System.out.println("getResource: " + name);
+            URL result = super.getResource(name);
+            //System.out.println("getResource return: " + result);
+            return result;
+        }
+
+        @Override
+        public Enumeration<URL> getResources(String name) throws IOException {
+            //System.out.println("getResources: " + name);
+            Enumeration<URL> result = super.getResources(name);
+            //System.out.println("getResources return: " + result);
+            return result;
+        }
+
+        @Override
+        public Stream<URL> resources(String name) {
+            //System.out.println("resources: " + name);
+            Stream<URL> result = super.resources(name);
+            //System.out.println("resources return: " + result);
+            return result;
+        }
+
+        @Override
+        protected Package definePackage(String name, String specTitle, String specVersion, String specVendor, String implTitle, String implVersion, String implVendor, URL sealBase) {
+            //System.out.println("definePackage: " + name + " " + specTitle + " " + specVersion + " " + specVendor + " " + implTitle + " " + implVersion + " " + implVendor + " " + sealBase);
+            Package result = super.definePackage(name, specTitle, specVersion, specVendor, implTitle, implVersion, implVendor, sealBase);
+            //System.out.println("definePackage return: " + result);
+            return result;
+        }
+
+        @Deprecated
+        @Override
+        protected Package getPackage(String name) {
+            //System.out.println("getPackage: " + name);
+            Package result = super.getPackage(name);
+            //System.out.println("getPackage return: " + result);
+            return result;
+        }
+
+        @Override
+        protected Package[] getPackages() {
+            //System.out.println("getPackages");
+            Package[] result = super.getPackages();
+            //System.out.println("getPackages return: " + result);
+            return result;
+        }
+
+        @Override
+        protected String findLibrary(String libname) {
+            //System.out.println("findLibrary: " + libname);
+            String result = super.findLibrary(libname);
+            //System.out.println("findLibrary return: " + result);
+            return result;
+        }
+
+        @Override
+        public void setDefaultAssertionStatus(boolean enabled) {
+            //System.out.println("setDefaultAssertionStatus: " + enabled);
+            super.setDefaultAssertionStatus(enabled);
+        }
+
+        @Override
+        public void setPackageAssertionStatus(String packageName, boolean enabled) {
+            //System.out.println("setPackageAssertionStatus: " + packageName + " " + enabled);
+            super.setPackageAssertionStatus(packageName, enabled);
+        }
+
+        @Override
+        public void setClassAssertionStatus(String className, boolean enabled) {
+            //System.out.println("setClassAssertionStatus: " + className + " " + enabled);
+            super.setClassAssertionStatus(className, enabled);
+        }
+
+        @Override
+        public void clearAssertionStatus() {
+            //System.out.println("clearAssertionStatus");
+            super.clearAssertionStatus();
+        }
+
+        @Override
+        public InputStream getResourceAsStream(String name) {
+            //System.out.println("getResourceAsStream: " + name);
+            InputStream result = super.getResourceAsStream(name);
+            //System.out.println("getResourceAsStream return: " + result);
+            return result;
+        }
+
+        @Override
+        public void close() throws IOException {
+            //System.out.println("close");
+            super.close();
+        }
+
+        @Override
+        protected void addURL(URL url) {
+            //System.out.println("addURL: " + url);
+            super.addURL(url);
+        }
+
+        @Override
+        public URL[] getURLs() {
+            //System.out.println("getURLs");
+            return super.getURLs();
+        }
+
+        @Override
+        protected Class<?> findClass(String name) throws ClassNotFoundException {
+            //System.out.println("findClass: " + name);
+            Class<?> result = super.findClass(name);
+            //System.out.println("findClass return: " + result);
+            return result;
+        }
+
+        @Override
+        protected Package definePackage(String name, Manifest man, URL url) {
+            //System.out.println("definePackage: " + name + " " + man + " " + url);
+            Package result = super.definePackage(name, man, url);
+            //System.out.println("definePackage return: " + result);
+            return result;
+        }
+
+        @Override
+        public URL findResource(String name) {
+            //System.out.println("findResource: " + name);
+            URL result = super.findResource(name);
+            //System.out.println("findResource return: " + result);
+            return result;
+        }
+
+        @Override
+        public Enumeration<URL> findResources(String name) throws IOException {
+            //System.out.println("findResources: " + name);
+            Enumeration<URL> result = super.findResources(name);
+            //System.out.println("findResources return: " + result);
+            return result;
+        }
+
+        @Override
+        protected PermissionCollection getPermissions(CodeSource codesource) {
+            //System.out.println("getPermissions: " + codesource);
+            PermissionCollection result = super.getPermissions(codesource);
+            //System.out.println("getPermissions return: " + result);
+            return result;
+        }
     }
 }
 

@@ -34,6 +34,7 @@ import java.lang.ref.SoftReference;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
 import java.security.AccessController;
 import java.security.CodeSigner;
@@ -93,7 +94,7 @@ import sun.security.util.LazyCodeSourcePermissionCollection;
  */
 
 public class BuiltinClassLoader
-    extends SecureClassLoader
+    extends URLClassLoader.BackportClassLoader
 {
     static {
         if (!ClassLoader.registerAsParallelCapable())
@@ -191,7 +192,9 @@ public class BuiltinClassLoader
      */
     BuiltinClassLoader(String name, BuiltinClassLoader parent, URLClassPath ucp) {
         // ensure getParent() returns null when the parent is the boot loader
-        super(name, parent == null || parent == ClassLoaders.bootLoader() ? null : parent);
+
+        // MODIFIED name has been removed
+        super(parent == null || parent == ClassLoaders.bootLoader() ? null : parent);
 
         this.parent = parent;
         this.ucp = ucp;
@@ -926,7 +929,7 @@ public class BuiltinClassLoader
      *      existing package either in this class loader or one of its ancestors
      * @throws SecurityException if the package name is untrusted in the manifest
      */
-    private Package definePackage(String pn, Manifest man, URL url) {
+    protected Package definePackage(String pn, Manifest man, URL url) {
         String specTitle = null;
         String specVersion = null;
         String specVendor = null;

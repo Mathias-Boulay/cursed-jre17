@@ -27,6 +27,7 @@ package jdk.internal.loader;
 
 import java.io.IOException;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.security.CodeSource;
