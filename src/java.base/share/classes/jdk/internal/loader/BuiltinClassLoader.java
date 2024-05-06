@@ -105,7 +105,7 @@ public class BuiltinClassLoader
     private final BuiltinClassLoader parent;
 
     // the URL class path, or null if there is no class path
-    private @Stable URLClassPath ucp;
+    public @Stable URLClassPath ucp;
 
     /**
      * A module defined/loaded by a built-in class loader.

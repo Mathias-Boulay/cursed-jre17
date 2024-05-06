@@ -108,10 +108,17 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
      */
     @SuppressWarnings("removal")
     public URLClassLoader(URL[] urls, ClassLoader parent) {
-        super(parent == null ? ClassLoaders.appClassLoader() : parent);
+        super(parent);
+        System.out.println("URLClassLoader is in reality: " + this.getClass().getName());
+        System.out.println("URLClassLoader stage 1: " +  Arrays.toString(urls) + " " + parent);
+        if(parent == null && ClassLoaders.appClassLoader() != null) {
+            urls = Stream.concat(Arrays.stream(urls), Arrays.stream(ClassLoaders.appClassLoader().ucp.getURLs())).toArray(URL[]::new);
+        }
+
+        System.out.println(Arrays.toString(new Throwable().getStackTrace()));
         this.acc = AccessController.getContext();
         this.ucp = new URLClassPath(urls, acc);
-        System.out.println("URLClassLoader: " +  Arrays.toString(urls) + " " + parent + " " + acc);
+        System.out.println("URLClassLoader stage 2: " +  Arrays.toString(urls) + " " + parent + " " + acc);
     }
 
     URLClassLoader(String name, URL[] urls, ClassLoader parent,
@@ -265,6 +272,12 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
     private WeakHashMap<Closeable,Void>
         closeables = new WeakHashMap<>();
 
+    @Override
+    public String getName() {
+        System.out.println("getName " + super.getName());
+        return super.getName() != null ? super.getName() : "unnamed";
+    }
+
     /**
      * Returns an input stream for reading the specified resource.
      * If this loader is closed, then any resources opened by this method
@@ -385,7 +398,7 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
      * @param url the URL to be added to the search path of URLs
      */
     protected void addURL(URL url) {
-        System.out.println("URLClassLoader.addURL: " + url);
+        System.out.println("[" + getClass().getName() + "] URLClassLoader.addURL: " + url);
         ucp.addURL(url);
     }
 
@@ -396,7 +409,8 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
      * @return the search path of URLs for loading classes and resources.
      */
     public URL[] getURLs() {
-        return ucp.getURLs();
+        URL[] ucpUrls =  ucp.getURLs();
+        return ucpUrls;
     }
 
     /**
@@ -620,6 +634,7 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
      * if the resource could not be found, or if the loader is closed.
      */
     public URL findResource(final String name) {
+        System.out.println("URLClassLoader.findResource: " + name);
         /*
          * The same restriction to finding classes applies to resources
          */
@@ -630,6 +645,13 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
                     return ucp.findResource(name, true);
                 }
             }, acc);
+        /*
+        System.out.println("Fallback test: " + getParent().getResource(name));
+        if (url == null) {
+            url = getParent().getResource(name);
+        }
+
+         */
 
         return url != null ? URLClassPath.checkURL(url) : null;
     }
@@ -646,6 +668,7 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
     public Enumeration<URL> findResources(final String name)
         throws IOException
     {
+        System.out.println("URLClassLoader.findResources: " + name);
         final Enumeration<URL> e = ucp.findResources(name, true);
 
         return new Enumeration<>() {
@@ -869,6 +892,7 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
         public Class<?> loadClass(String name) throws ClassNotFoundException {
             //System.out.println("loadclass: " + name);
             Class<?> result = super.loadClass(name);
+
             //System.out.println("loadclass return: " + result);
             return result;
         }

@@ -123,7 +123,7 @@ public class ClassLoaders {
     /**
      * Returns the application class loader.
      */
-    public static ClassLoader appClassLoader() {
+    public static BuiltinClassLoader appClassLoader() {
         return APP_LOADER;
     }
 
