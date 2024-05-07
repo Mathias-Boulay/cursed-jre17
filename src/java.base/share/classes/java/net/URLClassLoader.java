@@ -84,6 +84,12 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
     @SuppressWarnings("removal")
     private final AccessControlContext acc;
 
+    /* Hack field to communicate back newly looaded classes */
+    private boolean shouldLoadToAppClassLoader = false;
+
+    /** Dummy URL to be filtered out later by the implementation. It only serves as a really gross way of communication */
+    protected static final String DUMMY_URL = "http://toto.com";
+
     /**
      * Constructs a new URLClassLoader for the given URLs. The URLs will be
      * searched in the order specified for classes and resources after first
@@ -111,13 +117,22 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
         super(parent);
         System.out.println("URLClassLoader is in reality: " + this.getClass().getName());
         System.out.println("URLClassLoader stage 1: " +  Arrays.toString(urls) + " " + parent);
-        if(parent == null && ClassLoaders.appClassLoader() != null) {
-            urls = Stream.concat(Arrays.stream(urls), Arrays.stream(ClassLoaders.appClassLoader().ucp.getURLs())).toArray(URL[]::new);
-        }
 
+        //this.shouldLoadToAppClassLoader = true;
         System.out.println(Arrays.toString(new Throwable().getStackTrace()));
         this.acc = AccessController.getContext();
+
+        // Pre-process to remove the dummy url if necessary
+        /*
+        if(Arrays.stream(urls).anyMatch(url -> url.toString().equals(DUMMY_URL))) {
+            urls = Arrays.stream(urls).filter(url -> !url.toString().equals(DUMMY_URL)).toArray(URL[]::new);
+            System.out.println("URLClassLoader filtering dummy value");
+            shouldLoadToAppClassLoader = true;
+        }
+         */
+
         this.ucp = new URLClassPath(urls, acc);
+
         System.out.println("URLClassLoader stage 2: " +  Arrays.toString(urls) + " " + parent + " " + acc);
     }
 
@@ -399,6 +414,13 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
      */
     protected void addURL(URL url) {
         System.out.println("[" + getClass().getName() + "] URLClassLoader.addURL: " + url);
+        System.out.println("[" + getClass().getName() + "] URLClassLoader.addURL: " + getParent());
+        System.out.println("[" + getClass().getName() + "] URLClassLoader.addURL: " + ClassLoaders.appClassLoader());
+        if (ClassLoaders.appClassLoader() != null) {
+            // This is probably going to result in funky stuff oh my god
+            System.out.println("Injecting into the Appclassloader");
+            ClassLoaders.appClassLoader().ucp.addURL(url);
+        }
         ucp.addURL(url);
     }
 
@@ -410,6 +432,22 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
      */
     public URL[] getURLs() {
         URL[] ucpUrls =  ucp.getURLs();
+        // Fill all loaded classes, similar to java 8 classloader usage
+        System.out.println("getURLs from  " + this.getClass().getName());
+        System.out.println("getURLs from  " + getParent());
+        System.out.println("getURLs from  " + ClassLoaders.appClassLoader());
+        /*
+        if(ClassLoaders.appClassLoader() != null) {
+            // Add a fake URL that has to be filtered out later. It serves as a way to get all loaded classes
+            System.out.println(this.getClass().getName() + " Filling more URLs");
+            try {
+                ucpUrls = Stream.concat(Arrays.stream(ucpUrls), Stream.of(new URL(DUMMY_URL))).toArray(URL[]::new);
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+         */
+        System.out.println("getURLs from  " + Arrays.toString(ucpUrls));
         return ucpUrls;
     }
 
