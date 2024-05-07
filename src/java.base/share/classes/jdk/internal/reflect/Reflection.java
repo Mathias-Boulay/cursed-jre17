@@ -55,7 +55,7 @@ public class Reflection {
             Class.class, Set.of("classLoader", "classData"),
             ClassLoader.class, ALL_MEMBERS,
             Constructor.class, ALL_MEMBERS,
-            Field.class, ALL_MEMBERS,
+            //Field.class, ALL_MEMBERS,
             Method.class, ALL_MEMBERS,
             Module.class, ALL_MEMBERS,
             System.class, Set.of("security")

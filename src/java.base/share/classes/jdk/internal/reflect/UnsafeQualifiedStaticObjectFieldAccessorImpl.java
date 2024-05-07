@@ -73,9 +73,12 @@ class UnsafeQualifiedStaticObjectFieldAccessorImpl
     public void set(Object obj, Object value)
         throws IllegalArgumentException, IllegalAccessException
     {
+        /* Bypass readonly restriction for static fields
         if (isReadOnly) {
             throwFinalFieldIllegalAccessException(value);
         }
+         */
+        System.out.println("UnsafeQualifiedStaticObjectFieldAccessorImpl.set " + obj + " " + value);
         if (value != null) {
             if (!field.getType().isAssignableFrom(value.getClass())) {
                 throwSetIllegalArgumentException(value);

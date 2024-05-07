@@ -372,6 +372,31 @@ public final class Class<T> implements java.io.Serializable,
     public static Class<?> forName(String className)
                 throws ClassNotFoundException {
         Class<?> caller = Reflection.getCallerClass();
+
+        //MODIFIED BEGIN: Wrap the class load to the newer API equivalent
+        if(className.startsWith("sun.reflect")) {
+            System.out.println("DETECTED REFLECTION CLASS " + className);
+
+
+            if (className.equals("sun.reflect.ReflectionFactory")) {
+                className = "jdk.internal.reflect.ReflectionFactory";
+            }
+
+            if (className.equals("sun.reflect.ConstructorAccessor")) {
+                className = "jdk.internal.reflect.ConstructorAccessor";
+            }
+
+            if (className.equals("sun.reflect.MethodAccessor")) {
+                className = "jdk.internal.reflect.MethodAccessor";
+            }
+
+            if (className.equals("sun.reflect.FieldAccessor")) {
+                className = "jdk.internal.reflect.FieldAccessor";
+            }
+        }
+
+        //MODIFIED END
+
         return forName0(className, true, ClassLoader.getClassLoader(caller), caller);
     }
 
@@ -2600,11 +2625,16 @@ public final class Class<T> implements java.io.Serializable,
     public Field getDeclaredField(String name)
         throws NoSuchFieldException, SecurityException {
         Objects.requireNonNull(name);
+
+        System.out.println("[" + getName() + "] getDeclaredField: " + name);
+        System.out.println("[" + getName() + "] getDeclaredField: " + Arrays.toString(privateGetDeclaredFields(false)));
+
         @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             checkMemberAccess(sm, Member.DECLARED, Reflection.getCallerClass(), true);
         }
+
         Field field = searchFields(privateGetDeclaredFields(false), name);
         if (field == null) {
             throw new NoSuchFieldException(name);
