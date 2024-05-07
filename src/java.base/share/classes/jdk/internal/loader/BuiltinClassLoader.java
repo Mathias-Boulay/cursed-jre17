@@ -196,6 +196,17 @@ public class BuiltinClassLoader
         // MODIFIED name has been removed
         super(parent == null || parent == ClassLoaders.bootLoader() ? null : parent);
 
+
+        // Time to do a crime against humanity and access the private field of URLClassLoader
+        Class<URLClassLoader> cl = URLClassLoader.class;
+        try {
+            java.lang.reflect.Field ucpField = cl.getDeclaredField("ucp");
+            ucpField.setAccessible(true);
+            ucpField.set(this, ucp);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+
         this.parent = parent;
         this.ucp = ucp;
 
